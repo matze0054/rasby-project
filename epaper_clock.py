@@ -99,10 +99,10 @@ def render(width, height, weather):
     now = datetime.now()
 
     f_dep = font(FONT_REG, 13)
-    split = 160
+    split = 150
 
-    draw.text((10, 0), now.strftime("%H:%M"), font=font(FONT_BOLD, 48), fill=0)
-    draw.text((10, 58), now.strftime("%a, %d %b"), font=font(FONT_REG, 16), fill=0)
+    draw.text((10, 0), now.strftime("%H:%M"), font=font(FONT_BOLD, 40), fill=0)
+    draw.text((10, 52), now.strftime("%a, %d %b"), font=font(FONT_REG, 16), fill=0)
     draw.line((10, 84, split - 10, 84), fill=0)
     draw.text((10, 90), weather, font=font(FONT_REG, 14), fill=0)
 
