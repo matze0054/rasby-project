@@ -10,8 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 # Match the model printed on your module: epd2in9 (V1), epd2in9_V2, epd2in9b, ...
 from waveshare_epd import epd2in9_V2 as epd_driver
 
-LATITUDE = 52.52
-LONGITUDE = 13.41
+LATITUDE = 48.22  # 80939 Munich
+LONGITUDE = 11.62
 REFRESH_SECONDS = 300
 
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
