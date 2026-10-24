@@ -102,7 +102,7 @@ def render(width, height, weather):
     f_dep = font(FONT_REG, 12)
     split = 140
 
-    draw.text((10, 0), now.strftime("%H:%M"), font=font(FONT_BOLD, 40), fill=0)
+    draw.text((10, 0), now.strftime("%H:%M"), font=font(FONT_BOLD, 38), fill=0)
     draw.text((10, 52), now.strftime("%a, %d %b"), font=font(FONT_REG, 16), fill=0)
     draw.line((10, 84, split - 10, 84), fill=0)
     temp, _, label = weather.partition("  ")
