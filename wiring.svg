@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="700" height="830" viewBox="0 0 700 830" font-family="Helvetica, Arial, sans-serif">
   <rect width="700" height="830" fill="#ffffff"/>
   <text x="350" y="30" font-size="18" font-weight="bold" text-anchor="middle" fill="#111">Waveshare 2.9-inch e-paper to Raspberry Pi Zero 2 W</text>
-  <text x="350" y="50" font-size="12" text-anchor="middle" fill="#555">GPIO header, physical pin numbers. Pin 1 (square) is at the top left. Wire with the Pi powered off.</text>
+  <text x="350" y="50" font-size="12" text-anchor="middle" fill="#555">GPIO header, physical pin numbers. The SD-card end of the Pi is at the top (pin 1, square). Wire with the Pi powered off.</text>
 
   <!-- header body -->
   <rect x="318" y="68" width="64" height="694" rx="6" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
@@ -9,8 +9,9 @@
   <!-- connection lines -->
   <g stroke-width="4" stroke-linecap="round">
     <line x1="290" y1="90" x2="338" y2="90" stroke="#888888"/>
-    <line x1="362" y1="158" x2="410" y2="158" stroke="#222222"/>
-    <line x1="290" y1="260" x2="338" y2="260" stroke="#db2777"/>
+    <line x1="362" y1="158" x2="410" y2="158" stroke="#8b5a2b"/>
+    <line x1="290" y1="260" x2="338" y2="260" stroke="#111" stroke-width="7"/>
+    <line x1="290" y1="260" x2="338" y2="260" stroke="#fff" stroke-width="3"/>
     <line x1="362" y1="362" x2="410" y2="362" stroke="#7e22ce"/>
     <line x1="290" y1="396" x2="338" y2="396" stroke="#1d4ed8"/>
     <line x1="362" y1="430" x2="410" y2="430" stroke="#16a34a"/>
@@ -25,7 +26,7 @@
     <circle cx="338" cy="158" r="9" fill="#9ca3af"/><text x="338" y="161">5</text>
     <circle cx="338" cy="192" r="9" fill="#9ca3af"/><text x="338" y="195">7</text>
     <circle cx="338" cy="226" r="9" fill="#374151"/><text x="338" y="229">9</text>
-    <circle cx="338" cy="260" r="9" fill="#db2777"/><text x="338" y="263">11</text>
+    <circle cx="338" cy="260" r="9" fill="#fff" stroke="#111" stroke-width="2"/><text x="338" y="263" fill="#111">11</text>
     <circle cx="338" cy="294" r="9" fill="#9ca3af"/><text x="338" y="297">13</text>
     <circle cx="338" cy="328" r="9" fill="#9ca3af"/><text x="338" y="331">15</text>
     <circle cx="338" cy="362" r="9" fill="#9ca3af"/><text x="338" y="365">17</text>
@@ -46,7 +47,7 @@
   <g font-size="9" text-anchor="middle" fill="#fff">
     <circle cx="362" cy="90" r="9" fill="#9ca3af"/><text x="362" y="93">2</text>
     <circle cx="362" cy="124" r="9" fill="#9ca3af"/><text x="362" y="127">4</text>
-    <circle cx="362" cy="158" r="9" fill="#222222"/><text x="362" y="161">6</text>
+    <circle cx="362" cy="158" r="9" fill="#8b5a2b"/><text x="362" y="161">6</text>
     <circle cx="362" cy="192" r="9" fill="#9ca3af"/><text x="362" y="195">8</text>
     <circle cx="362" cy="226" r="9" fill="#9ca3af"/><text x="362" y="229">10</text>
     <circle cx="362" cy="260" r="9" fill="#9ca3af"/><text x="362" y="263">12</text>
@@ -111,11 +112,11 @@
     <rect x="100" y="78" width="190" height="24" rx="12" fill="#888888"/>
     <text x="195" y="94">VCC  =  3V3  (pin 1)</text>
 
-    <rect x="410" y="146" width="190" height="24" rx="12" fill="#222222"/>
+    <rect x="410" y="146" width="190" height="24" rx="12" fill="#8b5a2b"/>
     <text x="505" y="162">GND  =  GND  (pin 6)</text>
 
-    <rect x="100" y="248" width="190" height="24" rx="12" fill="#db2777"/>
-    <text x="195" y="264">RST  =  GPIO17  (pin 11)</text>
+    <rect x="100" y="248" width="190" height="24" rx="12" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="195" y="264" fill="#111">RST  =  GPIO17  (pin 11)</text>
 
     <rect x="410" y="350" width="190" height="24" rx="12" fill="#7e22ce"/>
     <text x="505" y="366">BUSY  =  GPIO24  (pin 18)</text>
@@ -133,5 +134,9 @@
     <text x="505" y="468">CS  =  GPIO8  (pin 24)</text>
   </g>
 
-  <text x="350" y="800" font-size="12" text-anchor="middle" fill="#555">Each colored label reads: display module pin = Raspberry Pi pin.</text>
+  <g font-size="12" text-anchor="middle" fill="#555">
+    <text x="350" y="782">Each label reads: display module pin = Raspberry Pi pin. Wire colors match the cable supplied with the module.</text>
+    <text x="350" y="800">Left pin column = inner row (nearer the board middle), right column = outer (edge) row.</text>
+    <text x="350" y="818">Count header columns from the SD-card end: column 1 = pins 1+2, column 3 = pins 5+6, column 12 = pins 23+24.</text>
+  </g>
 </svg>
