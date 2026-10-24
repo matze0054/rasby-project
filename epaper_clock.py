@@ -83,8 +83,9 @@ def fetch_departures():
             if d.get("cancelled"):
                 continue
             minutes = max(0, int((d["realtimeDepartureTime"] / 1000 - now) // 60))
-            dest = d["destination"].replace("Klinikum ", "")
-            dest = dest.replace("-Forschungszentrum", "")[:11]
+            dest = d["destination"]
+            if len(dest) > 6:
+                dest = dest[:6] + "."
             lines.append((f"{d['label']} {dest}", f"{minutes}'"))
             if len(lines) == MAX_DEPARTURES:
                 break
