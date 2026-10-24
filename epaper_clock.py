@@ -83,13 +83,14 @@ def fetch_departures():
             if d.get("cancelled"):
                 continue
             minutes = max(0, int((d["realtimeDepartureTime"] / 1000 - now) // 60))
-            dest = d["destination"][:14]
-            lines.append(f"{d['label']} {dest} {minutes}'")
+            dest = d["destination"].replace("Klinikum ", "")
+            dest = dest.replace("-Forschungszentrum", "")[:11]
+            lines.append((f"{d['label']} {dest}", f"{minutes}'"))
             if len(lines) == MAX_DEPARTURES:
                 break
-        return lines or ["No departures"]
+        return lines or [("No departures", "")]
     except Exception:
-        return ["Departures unavailable"]
+        return [("Departures n/a", "")]
 
 
 def render(width, height, weather):
@@ -98,18 +99,22 @@ def render(width, height, weather):
     draw = ImageDraw.Draw(image)
     now = datetime.now()
 
-    f_dep = font(FONT_REG, 13)
-    split = 150
+    f_dep = font(FONT_REG, 12)
+    split = 140
 
     draw.text((10, 0), now.strftime("%H:%M"), font=font(FONT_BOLD, 40), fill=0)
     draw.text((10, 52), now.strftime("%a, %d %b"), font=font(FONT_REG, 16), fill=0)
     draw.line((10, 84, split - 10, 84), fill=0)
-    draw.text((10, 90), weather, font=font(FONT_REG, 14), fill=0)
+    temp, _, label = weather.partition("  ")
+    draw.text((10, 88), temp, font=font(FONT_BOLD, 14), fill=0)
+    draw.text((10, 106), label, font=font(FONT_REG, 12), fill=0)
 
     draw.line((split, 5, split, width - 5), fill=0)
     draw.text((split + 8, 2), STATION, font=font(FONT_BOLD, 14), fill=0)
-    for i, line in enumerate(fetch_departures()):
-        draw.text((split + 8, 24 + i * 20), line, font=f_dep, fill=0)
+    for i, (text, mins) in enumerate(fetch_departures()):
+        y = 24 + i * 20
+        draw.text((split + 8, y), text, font=f_dep, fill=0)
+        draw.text((height - 4, y), mins, font=f_dep, fill=0, anchor="ra")
     return image
 
 
