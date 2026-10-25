@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Clock + date + weather for a Waveshare 2.9" e-paper on a Raspberry Pi.
+"""Clock + date + weather and fun pages for a Waveshare 2.9" e-paper on a Raspberry Pi.
 
-The panel is cleared to white on exit; `--clear` does only that, e.g. after a power loss.
+The pages rotate every PAGE_SECONDS. The panel is cleared to white on exit;
+`--clear` does only that, e.g. after a power loss.
 """
 import argparse
 import json
@@ -16,11 +17,15 @@ from PIL import Image, ImageDraw, ImageFont
 # Match the model printed on your module: epd2in9 (V1), epd2in9_V2, epd2in9b, ...
 from waveshare_epd import epd2in9_V2 as epd_driver
 
+import fun_screen
+
 LATITUDE = 48.22  # 80939 Munich
 LONGITUDE = 11.62
 LEAD_SECONDS = {"partial": 1.0, "full": 5.0}  # initial guesses of how long each refresh takes
-FULL_REFRESH_EVERY = 10  # minutes between full (flashing) refreshes that clear ghosting
+FULL_REFRESH_EVERY = 10  # refreshes (5 min at 30 s per page) between full, flashing refreshes
 WEATHER_EVERY = 10  # minutes between weather fetches
+PAGE_SECONDS = 30  # should divide 60 so pages switch on the clock
+PAGE_ORDER = ("clock", "wiki", "pokemon", "holidays")
 STATION = "Kieferngarten"
 MVG_API = "https://www.mvg.de/api/bgw-pt/v3"
 MAX_DEPARTURES = 5
@@ -125,6 +130,12 @@ def render(width, height, weather, now=None, departures=None):
     return image
 
 
+def render_page(page, width, height, weather, target):
+    if page == "clock":
+        return render(width, height, weather, target, fetch_departures(target.timestamp()))
+    return fun_screen.PAGES[page](width, height, target)
+
+
 def clear_panel(epd, awake=False):
     """Turn the panel white and put it to sleep."""
     if awake:
@@ -152,18 +163,23 @@ def main():
     awake = False
     try:
         weather = "Weather unavailable"
+        weather_at = None
         lead = dict(LEAD_SECONDS)
         tick = 0
         since_full = 0
         while True:
-            # Prepare the next minute's frame, then push it early so the panel changes on the minute.
-            target = (datetime.now() + timedelta(minutes=1)).replace(second=0, microsecond=0)
-            if tick % WEATHER_EVERY == 0:
-                weather = fetch_weather()
+            # Prepare the next page, then push it early so the panel changes right on the boundary.
+            now = datetime.now()
+            seconds_left = PAGE_SECONDS - now.second % PAGE_SECONDS
+            target = now.replace(microsecond=0) + timedelta(seconds=seconds_left)
+            page = PAGE_ORDER[tick % len(PAGE_ORDER)]
             tick += 1
-            image = render(
-                epd.width, epd.height, weather, target, fetch_departures(target.timestamp())
-            )
+            if page == "clock" and (
+                weather_at is None or time.monotonic() - weather_at >= WEATHER_EVERY * 60
+            ):
+                weather = fetch_weather()
+                weather_at = time.monotonic()
+            image = render_page(page, epd.width, epd.height, weather, target)
             buf = epd.getbuffer(image)
             kind = "full" if not awake or since_full >= FULL_REFRESH_EVERY else "partial"
             time.sleep(max(0.0, (target - datetime.now()).total_seconds() - lead[kind]))

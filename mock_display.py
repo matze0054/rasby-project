@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Render what the e-paper shows to a PNG, without the hardware.
 
-Usage: python mock_display.py [--live] [-o preview.png] [--scale 3]
+Usage: python mock_display.py [--page clock|wiki|pokemon|holidays] [--live] [-o preview.png] [--scale 3]
 By default sample data is used; --live fetches real weather/departures.
+The wiki, pokemon and holidays pages always fetch live data.
 """
 import argparse
 import sys
 import time
 import types
+from datetime import datetime
 
 # Stub the Waveshare driver so epaper_clock can be imported off-device.
 _driver = types.ModuleType("waveshare_epd.epd2in9_V2")
@@ -34,6 +36,7 @@ def sample_departures():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--live", action="store_true", help="use real network data")
+    ap.add_argument("--page", choices=clock.PAGE_ORDER, default="clock")
     ap.add_argument("-o", "--output", default="preview.png")
     ap.add_argument("--scale", type=int, default=3)
     args = ap.parse_args()
@@ -45,7 +48,7 @@ def main():
         clock._station_id = "sample"
         clock.mvg_get = lambda path, params: sample_departures()
 
-    image = clock.render(WIDTH, HEIGHT, weather)
+    image = clock.render_page(args.page, WIDTH, HEIGHT, weather, datetime.now())
     image = image.resize((image.width * args.scale, image.height * args.scale), Image.NEAREST)
     image.save(args.output)
     print(f"Saved {args.output} ({image.width}x{image.height})")
