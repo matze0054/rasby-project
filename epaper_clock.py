@@ -4,7 +4,7 @@ import json
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -13,8 +13,9 @@ from waveshare_epd import epd2in9_V2 as epd_driver
 
 LATITUDE = 48.22  # 80939 Munich
 LONGITUDE = 11.62
-REFRESH_SECONDS = 60
-WEATHER_EVERY = 5  # refresh weather every N display refreshes
+LEAD_SECONDS = {"partial": 1.0, "full": 5.0}  # initial guesses of how long each refresh takes
+FULL_REFRESH_EVERY = 60  # minutes between full (flashing) refreshes that clear ghosting
+WEATHER_EVERY = 10  # minutes between weather fetches
 STATION = "Kieferngarten"
 MVG_API = "https://www.mvg.de/api/bgw-pt/v3"
 MAX_DEPARTURES = 5
@@ -63,8 +64,8 @@ def mvg_get(path, params):
         return json.load(resp)
 
 
-def fetch_departures():
-    """Return a list of 'U6 Destination  4'' strings for the station."""
+def fetch_departures(at=None):
+    """Return a list of 'U6 Destination  4'' strings for the station, as of `at` (epoch seconds)."""
     global _station_id
     try:
         if _station_id is None:
@@ -77,7 +78,7 @@ def fetch_departures():
             "/departures",
             {"globalId": _station_id, "limit": 20, "transportTypes": "UBAHN"},
         )
-        now = time.time()
+        now = at if at is not None else time.time()
         lines = []
         for d in deps:
             if d.get("cancelled"):
@@ -94,11 +95,11 @@ def fetch_departures():
         return [("Departures n/a", "")]
 
 
-def render(width, height, weather):
+def render(width, height, weather, now=None, departures=None):
     # Draw in landscape: the panel is 128x296 natively.
     image = Image.new("1", (height, width), 255)
     draw = ImageDraw.Draw(image)
-    now = datetime.now()
+    now = now or datetime.now()
 
     f_dep = font(FONT_REG, 12)
     split = 140
@@ -112,7 +113,7 @@ def render(width, height, weather):
 
     draw.line((split, 5, split, width - 5), fill=0)
     draw.text((split + 8, 2), STATION, font=font(FONT_BOLD, 14), fill=0)
-    for i, (text, mins) in enumerate(fetch_departures()):
+    for i, (text, mins) in enumerate(departures if departures is not None else fetch_departures()):
         y = 24 + i * 20
         draw.text((split + 8, y), text, font=f_dep, fill=0)
         draw.text((height - 4, y), mins, font=f_dep, fill=0, anchor="ra")
@@ -121,20 +122,41 @@ def render(width, height, weather):
 
 def main():
     epd = epd_driver.EPD()
+    awake = False
     try:
         weather = "Weather unavailable"
+        lead = dict(LEAD_SECONDS)
         tick = 0
+        since_full = 0
         while True:
+            # Prepare the next minute's frame, then push it early so the panel changes on the minute.
+            target = (datetime.now() + timedelta(minutes=1)).replace(second=0, microsecond=0)
             if tick % WEATHER_EVERY == 0:
                 weather = fetch_weather()
             tick += 1
-            epd.init()
-            image = render(epd.width, epd.height, weather)
-            epd.display(epd.getbuffer(image))
-            epd.sleep()
-            time.sleep(REFRESH_SECONDS)
+            image = render(
+                epd.width, epd.height, weather, target, fetch_departures(target.timestamp())
+            )
+            buf = epd.getbuffer(image)
+            kind = "full" if not awake or since_full >= FULL_REFRESH_EVERY else "partial"
+            time.sleep(max(0.0, (target - datetime.now()).total_seconds() - lead[kind]))
+            started = time.monotonic()
+            if kind == "full":
+                if awake:
+                    epd.sleep()  # releases SPI/GPIO so init() can reopen them
+                epd.init()
+                epd.display_Base(buf)
+                awake, since_full = True, 0
+            else:
+                epd.display_Partial(buf)
+                since_full += 1
+            lead[kind] = time.monotonic() - started
+            time.sleep(max(0.0, (target - datetime.now()).total_seconds()))
     except KeyboardInterrupt:
-        epd_driver.epdconfig.module_exit(cleanup=True)
+        pass
+    finally:
+        if awake:
+            epd.sleep()
 
 
 if __name__ == "__main__":
