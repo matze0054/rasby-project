@@ -22,10 +22,10 @@ import fun_screen
 LATITUDE = 48.22  # 80939 Munich
 LONGITUDE = 11.62
 LEAD_SECONDS = {"partial": 1.0, "full": 5.0}  # initial guesses of how long each refresh takes
-FULL_REFRESH_EVERY = 10  # refreshes (5 min at 30 s per page) between full, flashing refreshes
+FULL_REFRESH_EVERY = 18  # refreshes (3 min at 10 s per page) between full, flashing refreshes
 WEATHER_EVERY = 10  # minutes between weather fetches
-PAGE_SECONDS = 30  # should divide 60 so pages switch on the clock
-PAGE_ORDER = ("clock", "wiki", "pokemon", "holidays")
+PAGE_SECONDS = 10  # should divide 60 so pages switch on the clock
+PAGE_ORDER = ("clock", "pokemon", "holidays", "matchday", "table", "bayern")
 STATION = "Kieferngarten"
 MVG_API = "https://www.mvg.de/api/bgw-pt/v3"
 MAX_DEPARTURES = 5
@@ -133,7 +133,7 @@ def render(width, height, weather, now=None, departures=None):
 def render_page(page, width, height, weather, target):
     if page == "clock":
         return render(width, height, weather, target, fetch_departures(target.timestamp()))
-    return fun_screen.PAGES[page](width, height, target)
+    return fun_screen.render(page, width, height, target)
 
 
 def clear_panel(epd, awake=False):

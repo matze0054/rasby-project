@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Render what the e-paper shows to a PNG, without the hardware.
 
-Usage: python mock_display.py [--page clock|wiki|pokemon|holidays] [--live] [-o preview.png] [--scale 3]
+Usage: python mock_display.py [--page clock|pokemon|holidays|matchday|table|bayern] [--live]
+       [-o preview.png] [--scale 3]
 By default sample data is used; --live fetches real weather/departures.
-The wiki, pokemon and holidays pages always fetch live data.
+The pages other than the clock always fetch live data.
 """
 import argparse
 import sys
