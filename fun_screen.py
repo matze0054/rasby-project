@@ -351,9 +351,9 @@ def render_bayern(width, height, now):
 PAGES = {
     "pokemon": render_pokemon,
     "holidays": render_holidays,
-    "matchday": render_matchday,
-    "table": render_table,
-    "bayern": render_bayern,
+    #"matchday": render_matchday,
+    #"table": render_table,
+    #"bayern": render_bayern,
 }
 
 
