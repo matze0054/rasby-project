@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Clock + date + weather for a Waveshare 2.9" e-paper on a Raspberry Pi."""
+"""Clock + date + weather for a Waveshare 2.9" e-paper on a Raspberry Pi.
+
+The panel is cleared to white on exit; `--clear` does only that, e.g. after a power loss.
+"""
+import argparse
 import json
+import signal
 import time
 import urllib.parse
 import urllib.request
@@ -14,7 +19,7 @@ from waveshare_epd import epd2in9_V2 as epd_driver
 LATITUDE = 48.22  # 80939 Munich
 LONGITUDE = 11.62
 LEAD_SECONDS = {"partial": 1.0, "full": 5.0}  # initial guesses of how long each refresh takes
-FULL_REFRESH_EVERY = 60  # minutes between full (flashing) refreshes that clear ghosting
+FULL_REFRESH_EVERY = 10  # minutes between full (flashing) refreshes that clear ghosting
 WEATHER_EVERY = 10  # minutes between weather fetches
 STATION = "Kieferngarten"
 MVG_API = "https://www.mvg.de/api/bgw-pt/v3"
@@ -120,8 +125,30 @@ def render(width, height, weather, now=None, departures=None):
     return image
 
 
+def clear_panel(epd, awake=False):
+    """Turn the panel white and put it to sleep."""
+    if awake:
+        epd.sleep()  # releases SPI/GPIO so init() can reopen them
+    epd.init()
+    epd.Clear(0xFF)
+    epd.sleep()
+
+
+def _terminate(signum, frame):
+    raise SystemExit(0)
+
+
 def main():
+    parser = argparse.ArgumentParser(description="E-paper clock")
+    parser.add_argument("--clear", action="store_true", help="turn the panel white and exit")
+    args = parser.parse_args()
+
     epd = epd_driver.EPD()
+    if args.clear:
+        clear_panel(epd)
+        return
+
+    signal.signal(signal.SIGTERM, _terminate)  # so `kill` and systemd stop also clear the panel
     awake = False
     try:
         weather = "Weather unavailable"
@@ -145,8 +172,9 @@ def main():
                 if awake:
                     epd.sleep()  # releases SPI/GPIO so init() can reopen them
                 epd.init()
+                awake = True
                 epd.display_Base(buf)
-                awake, since_full = True, 0
+                since_full = 0
             else:
                 epd.display_Partial(buf)
                 since_full += 1
@@ -155,8 +183,9 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # a second Ctrl+C must not cut the clear short
         if awake:
-            epd.sleep()
+            clear_panel(epd, awake=True)
 
 
 if __name__ == "__main__":
