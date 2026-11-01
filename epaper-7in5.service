@@ -1,0 +1,17 @@
+[Unit]
+Description=7.5 inch e-paper dashboard
+# The Pi has no battery-backed clock: wait for NTP so the first frame shows the right time.
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
+
+[Service]
+User=mkern
+WorkingDirectory=/home/mkern/rasby-project
+ExecStart=/usr/bin/python3 -u /home/mkern/rasby-project/epaper_clock_7in5.py
+Restart=always
+RestartSec=30
+# On stop and shutdown the script clears the panel, which takes a few seconds.
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
