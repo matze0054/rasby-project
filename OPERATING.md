@@ -10,7 +10,7 @@ Commands below are typed in a shell on the Pi (Raspberry Pi Connect remote shell
 |---|---|
 | Switch everything on | Plug in the power supply |
 | Switch everything off | `sudo shutdown -h now`, wait until the green LED stops blinking, then unplug |
-| Switch off with the iPhone | Tap the "Pi off" shortcut, wait for the white screen plus 30 s, flip the strip ([setup](#switching-off-with-the-iphone-and-a-switched-power-strip)) |
+| Switch off with the iPhone | Tap the "Pi off" shortcut, wait for the white screen plus 20 s, flip the strip ([setup](#switching-off-with-the-iphone-and-a-switched-power-strip)) |
 | Restart the Pi | `sudo reboot` |
 | Stop only the dashboard | `sudo systemctl stop epaper-7in5` |
 | Start the dashboard again | `sudo systemctl start epaper-7in5` |
@@ -56,7 +56,7 @@ For a one-tap shutdown the iPhone logs in to the Pi over your home Wi-Fi (SSH, b
 A manual power strip cannot be switched by the phone. So the routine is:
 
 1. Tap the **Pi off** shortcut.
-2. The Pi shuts down after one minute and clears the display. When the screen is white, wait **about 30 more seconds** until the green LED has stopped.
+2. The Pi shuts down immediately and clears the display. When the screen is white, wait **about 20 more seconds** until the green LED has stopped.
 3. Flip the strip off.
 
 Switching the strip on again boots the Pi and the dashboard comes back by itself.

@@ -1,6 +1,6 @@
 # One-tap shutdown from the iPhone (home Wi-Fi) with a switched power strip
 
-Goal: tap a shortcut on the iPhone, the Pi shuts down cleanly one minute later, then you flip the switch on the power strip. No internet service is involved: the iPhone logs in to the Pi over your home Wi-Fi with SSH (built into the Shortcuts app) using a key that is only allowed to run two things: `shutdown` and `cancel`.
+Goal: tap a shortcut on the iPhone, the Pi shuts down cleanly right away (about 30 seconds until it is safe to cut the power), then you flip the switch on the power strip. No internet service is involved: the iPhone logs in to the Pi over your home Wi-Fi with SSH (built into the Shortcuts app) using a key that is only allowed to run two things: `shutdown` and `cancel`.
 
 Works only while the iPhone and the Pi are on the same Wi-Fi. Away from home, use https://connect.raspberrypi.com in Safari and run `sudo shutdown -h now`.
 
@@ -32,7 +32,7 @@ hostname -I                      # note the IP address, e.g. 192.168.1.42
 - If the `sudo -n` line says `sudo: a password is required`, the shutdown cannot run from the phone. This is the normal case on a fresh Pi: the rule does not exist yet. Allow only the two shutdown commands without a password (asks for your password once):
 
   ```bash
-  echo 'mkern ALL=(root) NOPASSWD: /sbin/shutdown -h +1, /sbin/shutdown -c' | sudo tee /etc/sudoers.d/pi-shutdown
+  echo 'mkern ALL=(root) NOPASSWD: /sbin/shutdown -h now, /sbin/shutdown -h +1, /sbin/shutdown -c' | sudo tee /etc/sudoers.d/pi-shutdown
   sudo chmod 440 /etc/sudoers.d/pi-shutdown
   sudo visudo -cf /etc/sudoers.d/pi-shutdown     # expect: parsed OK
   sudo -k                                        # always forget the remembered password before testing
@@ -41,7 +41,7 @@ hostname -I                      # note the IP address, e.g. 192.168.1.42
   shutdown --show                                # expect: No scheduled shutdown.
   ```
 
-  This does not make `sudo` passwordless in general, only these two exact commands. `sudo` remembers a typed password for a few minutes, so a test without `sudo -k` can succeed even though the rule is missing.
+  This does not make `sudo` passwordless in general, only these exact shutdown commands. `sudo` remembers a typed password for a few minutes, so a test without `sudo -k` can succeed even though the rule is missing.
 - Write down the IP address from `hostname -I`. It is the fallback if the name `rasbyprojectmk.local` does not work on the iPhone. In your router, give the Pi a fixed IP address ("DHCP reservation") so the address never changes.
 
 ---
@@ -89,12 +89,12 @@ On the iPhone: **Settings, Privacy & Security, Local Network**, switch **Shortcu
 To avoid accidental shutdowns, put a confirmation in front of the SSH action:
 
 1. Tap **+** below the action list, search for `Show Alert` and add it. Place it **above** the SSH action (drag the handle to reorder).
-2. Title: `Shut down Pi?`, message: `The Pi shuts down in 1 minute.` If you cancel in the alert, the shortcut stops.
-3. Optional: add `Show Notification` below the SSH action with the text `Pi shuts down in 1 minute. Flip the strip when the screen is white and the LED stopped.`
+2. Title: `Shut down Pi?`, message: `The Pi shuts down immediately.` If you cancel in the alert, the shortcut stops.
+3. Optional: add `Show Notification` below the SSH action with the text `Pi is shutting down. Flip the strip when the screen is white and the LED stopped.`
 
 Tap **Done**.
 
-### B5. Create the shortcut "Pi cancel"
+### B5. Create the shortcut "Pi cancel" (only needed for the test; the shutdown itself cannot be undone)
 
 Long-press the shortcut "Pi off" in the Shortcuts app, **Duplicate**, rename to `Pi cancel`, open it and change only the **Script** to `cancel`. (You can delete the Show Alert action here.) Tap **Done**.
 
@@ -126,7 +126,7 @@ chmod 600 ~/.ssh/authorized_keys
 cat ~/.ssh/authorized_keys     # check: one line per key, the iPhone key starts with restrict,command=...
 ```
 
-What this does: whoever logs in with this key can only run `pi_power.sh`, which accepts `shutdown` (halt in 1 minute) and `cancel`, nothing else. It gives no shell, no file access and no port forwarding. If the repo is in a different folder than `/home/mkern/rasby-project`, adjust the path.
+What this does: whoever logs in with this key can only run `pi_power.sh`, which accepts `shutdown` (halt now) and `cancel` (cancels a pending shutdown), nothing else. It gives no shell, no file access and no port forwarding. If the repo is in a different folder than `/home/mkern/rasby-project`, adjust the path.
 
 ---
 
@@ -142,9 +142,9 @@ If that works, **Pi off** works the same way.
 
 ### D2. Daily use: switching off
 
-1. Tap **Pi off** and confirm. The Pi announces the shutdown for one minute later (changed your mind? run **Pi cancel** within that minute).
-2. After about a minute the dashboard stops and the **display turns white**.
-3. Wait **about 30 more seconds** until the green LED on the Pi stops blinking.
+1. Tap **Pi off** and confirm. The shutdown starts immediately (there is no undo, the confirmation alert is your safety net).
+2. Within a few seconds the dashboard stops and the **display turns white**.
+3. Wait **about 20 more seconds** until the green LED on the Pi stops blinking.
 4. Flip the **switch on the power strip** off. Now the Pi has no power.
 
 ### D3. Daily use: switching on
