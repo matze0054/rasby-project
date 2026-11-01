@@ -36,9 +36,11 @@ def sample_departures():
 
 def sample_dashboard():
     now = datetime.now()
+    start = now.replace(minute=0, second=0, microsecond=0)
+    sample_rain = [0, 5, 20, 45, 70, 90, 100, 60, 30, 10, 0, 0, 15, 25]
     weather = {
-        "temp": 12.4, "feels": 10.2, "label": "Partly cloudy", "wind": 14, "rain": 30,
-        "sunrise": now.replace(hour=6, minute=52), "sunset": now.replace(hour=16, minute=50),
+        "temp": 12.4, "label": "Partly cloudy",
+        "hours": [(start + timedelta(hours=i), p) for i, p in enumerate(sample_rain)],
     }
     departures = [(row["label"], row["destination"], int((row["realtimeDepartureTime"] - time.time() * 1000) // 60000))
                   for row in sample_departures()]

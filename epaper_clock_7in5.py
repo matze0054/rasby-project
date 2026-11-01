@@ -24,6 +24,7 @@ STATION = "Kieferngarten"
 MVG_API = "https://www.mvg.de/api/bgw-pt/v3"
 MAX_DEPARTURES = 8
 WEATHER_EVERY = 10  # minutes between weather fetches
+RAIN_HOURS = 12  # hours shown in the rain-probability bar chart
 
 # HAT pins (BCM numbers) when stacked on the 40-pin header; PIN_PWR = None if the HAT has no PWR pin.
 PIN_RST, PIN_DC, PIN_BUSY, PIN_PWR = 17, 25, 24, 18
@@ -78,26 +79,27 @@ def ellipsize(text, fnt, max_width):
 
 
 def fetch_weather():
-    """Return the current weather, or None if the request fails."""
+    """Return the current weather and the hourly rain probability, or None if the request fails."""
     url = (
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={LATITUDE}&longitude={LONGITUDE}"
-        "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m"
-        "&daily=precipitation_probability_max,sunrise,sunset"
-        "&timezone=auto&forecast_days=1"
+        "&current=temperature_2m,weather_code"
+        "&hourly=precipitation_probability"
+        "&timezone=auto&forecast_days=2"
     )
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:
             data = json.load(resp)
-        cur, daily = data["current"], data["daily"]
+        cur, hourly = data["current"], data["hourly"]
+        hours = [
+            (datetime.fromisoformat(t), p)
+            for t, p in zip(hourly["time"], hourly["precipitation_probability"])
+            if p is not None
+        ]
         return {
             "temp": cur["temperature_2m"],
-            "feels": cur["apparent_temperature"],
             "label": WEATHER_CODES.get(cur["weather_code"], "Unknown"),
-            "wind": cur["wind_speed_10m"],
-            "rain": daily["precipitation_probability_max"][0],
-            "sunrise": datetime.fromisoformat(daily["sunrise"][0]),
-            "sunset": datetime.fromisoformat(daily["sunset"][0]),
+            "hours": hours,
         }
     except Exception:
         return None
@@ -173,34 +175,57 @@ def day_text(day, today):
 
 
 def draw_clock(draw, now):
-    clock_font = fit_font(FONT_BOLD, "00:00", 160, SPLIT - MARGIN - 8)
-    draw.text((MARGIN - 4, 150), f"{now:%H:%M}", font=clock_font, fill=0, anchor="ls")
-    date_font = fit_font(FONT_REG, "Wednesday, 30 September", 34, SPLIT - 2 * MARGIN)
-    draw.text((MARGIN, 198), f"{now:%A}, {now.day} {now:%B}", font=date_font, fill=0, anchor="ls")
+    clock_font = fit_font(FONT_BOLD, "00:00", 120, SPLIT - MARGIN - 8)
+    draw.text((MARGIN - 4, 112), f"{now:%H:%M}", font=clock_font, fill=0, anchor="ls")
+    date_font = fit_font(FONT_REG, "Wednesday, 30 September", 30, SPLIT - 2 * MARGIN)
+    draw.text((MARGIN, 152), f"{now:%A}, {now.day} {now:%B}", font=date_font, fill=0, anchor="ls")
 
 
-def draw_weather(draw, weather):
-    top = 216
+def draw_rain_chart(draw, hours, now):
+    """Bar chart of the rain probability for the next RAIN_HOURS hours."""
+    start = now.replace(minute=0, second=0, microsecond=0)
+    bars = [(t, p) for t, p in hours if t >= start][:RAIN_HOURS]
+    if not bars:
+        return
+    left, right, top, bottom = MARGIN + 44, SPLIT - 20, 236, 314
+    height = bottom - top
+    label = font(FONT_REG, 13)
+    for pct in (0, 50, 100):
+        y = bottom - round(height * pct / 100)
+        draw.text((left - 6, y), f"{pct}%", font=label, fill=0, anchor="rm")
+        if pct:
+            for x in range(left, right, 8):  # dashed guide line
+                draw.line((x, y, x + 3, y), fill=0)
+    draw.line((left, bottom, right, bottom), fill=0, width=2)
+    slot = (right - left) / RAIN_HOURS
+    for i, (t, pct) in enumerate(bars):
+        x = left + i * slot
+        bar_h = round(height * pct / 100)
+        if pct and bar_h < 2:
+            bar_h = 2
+        if bar_h:
+            draw.rectangle((x + 4, bottom - bar_h, x + slot - 4, bottom - 1), fill=0)
+        if i % 3 == 0:
+            draw.text((x + slot / 2, bottom + 18), f"{t:%H}:00", font=label, fill=0, anchor="ms")
+
+
+def draw_weather(draw, weather, now):
+    top = 172
     draw.line((MARGIN, top, SPLIT - 20, top), fill=0, width=2)
     if not weather:
         draw.text((MARGIN, top + 40), "Weather unavailable", font=font(FONT_REG, 26), fill=0)
         return
-    big = font(FONT_BOLD, 64)
-    draw.text((MARGIN, top + 62), f"{deg(weather['temp'])}", font=big, fill=0, anchor="ls")
-    x = MARGIN + big.getlength(f"{deg(weather['temp'])}") + 16
-    label = fit_font(FONT_BOLD, weather["label"], 28, SPLIT - 20 - x)
-    draw.text((x, top + 62), weather["label"], font=label, fill=0, anchor="ls")
-    small = font(FONT_REG, 19)
-    draw.text(
-        (MARGIN, top + 88),
-        f"Feels {deg(weather['feels'])}  ·  Wind {weather['wind']:.0f} km/h  ·  Rain {weather['rain']} %",
-        font=small, fill=0, anchor="ls",
-    )
-    draw.text(
-        (MARGIN, top + 111),
-        f"Sunrise {weather['sunrise']:%H:%M}  ·  Sunset {weather['sunset']:%H:%M}",
-        font=small, fill=0, anchor="ls",
-    )
+    big = font(FONT_BOLD, 56)
+    base = top + 50
+    draw.text((MARGIN, base), f"{deg(weather['temp'])}", font=big, fill=0, anchor="ls")
+    x = MARGIN + big.getlength(f"{deg(weather['temp'])}") + 14
+    caption = font(FONT_REG, 14)
+    cap_w = caption.getlength("Rain chance")
+    label = fit_font(FONT_BOLD, weather["label"], 28, SPLIT - 20 - x - cap_w - 10)
+    draw.text((x, base), weather["label"], font=label, fill=0, anchor="ls")
+    draw.text((SPLIT - 20, base - 18), "Rain chance", font=caption, fill=0, anchor="rs")
+    draw.text((SPLIT - 20, base), f"next {RAIN_HOURS} h", font=caption, fill=0, anchor="rs")
+    draw_rain_chart(draw, weather["hours"], now)
 
 
 def draw_pokemon(image, draw, now):
@@ -287,7 +312,7 @@ def render(now, weather, departures):
     image = Image.new("L", (WIDTH, HEIGHT), 255)
     draw = ImageDraw.Draw(image)
     draw_clock(draw, now)
-    draw_weather(draw, weather)
+    draw_weather(draw, weather, now)
     draw_pokemon(image, draw, now)
     draw.line((SPLIT, 12, SPLIT, HEIGHT - 12), fill=0, width=2)
     draw_departures(draw, departures, bayern_home_today(now))
