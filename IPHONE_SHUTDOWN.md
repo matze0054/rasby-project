@@ -23,12 +23,21 @@ Open the remote shell: https://connect.raspberrypi.com, your device `rasbyprojec
 cd ~/rasby-project && git pull
 chmod +x pi_power.sh
 systemctl is-active ssh          # expect: active
-sudo -n true && echo "sudo ok"   # expect: sudo ok
+sudo -n /sbin/shutdown -c; echo "exit=$?"   # must NOT say "a password is required" (see below)
 hostname -I                      # note the IP address, e.g. 192.168.1.42
 ```
 
 - If `ssh` is not `active`: `sudo systemctl enable --now ssh`. (SSH was enabled in your setup, so this is normally fine.)
-- If `sudo -n true` asks for a password or fails, the shutdown cannot run without a password. Passwordless sudo is the default for the first user on Raspberry Pi OS; tell me if it is different and I adapt `pi_power.sh`.
+- If the `sudo -n` line says `sudo: a password is required`, the shutdown cannot run from the phone. Allow only the two shutdown commands without a password (asks for your password once):
+
+  ```bash
+  echo 'mkern ALL=(root) NOPASSWD: /sbin/shutdown -h +1, /sbin/shutdown -c' | sudo tee /etc/sudoers.d/pi-shutdown
+  sudo chmod 440 /etc/sudoers.d/pi-shutdown
+  sudo visudo -cf /etc/sudoers.d/pi-shutdown     # expect: parsed OK
+  sudo -n /sbin/shutdown -c; echo "exit=$?"      # must not say "a password is required"
+  ```
+
+  This does not make `sudo` passwordless in general, only these two exact commands. The test command only cancels a pending shutdown and is harmless.
 - Write down the IP address from `hostname -I`. It is the fallback if the name `rasbyprojectmk.local` does not work on the iPhone. In your router, give the Pi a fixed IP address ("DHCP reservation") so the address never changes.
 
 ---
@@ -152,7 +161,7 @@ Flip the strip on. The Pi boots and the dashboard shows up after one to two minu
 | Pi has a new IP address | Set a DHCP reservation in the router, then update Host in both shortcuts. |
 | Host key warning | The Pi was re-installed or got a new SSH identity. Accept the new key in Shortcuts if you are sure it is your Pi. |
 | No SSH key option in the action | Update iOS. As a fallback choose **Password** with your Pi password; then the restriction does not apply, so use the key whenever possible. |
-| Pi does not shut down but the key works | `sudo -n true` must work without a password (Part A). |
+| Pi does not shut down but the key works | `sudo -n /sbin/shutdown -c` must work without a password (Part A, sudoers rule). |
 
 ## Removing or replacing the phone's access
 
