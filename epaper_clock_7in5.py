@@ -33,7 +33,7 @@ SPI_BUS, SPI_DEVICE = 0, 0
 PARTIAL_REFRESH = True  # False: flash-free partial updates are replaced by fast full-frame refreshes
 FULL_REFRESH_EVERY = 15  # refreshes (minutes) between full, flashing refreshes that clear ghosting
 LEAD_SECONDS = {"partial": 1.0, "fast": 2.0, "full": 5.0}  # initial guesses of the refresh durations
-ROTATE = 0  # 180 if the display is mounted upside down
+ROTATE = 180  # 0 = normal, 180 = upside down (display mounted the other way round)
 CLEAR_ON_EXIT = True
 
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"

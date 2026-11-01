@@ -5,6 +5,7 @@ E-paper clock, date and weather display on a Raspberry Pi Zero 2 W. Two display 
 - Waveshare 2.9" e-paper module (V2, 296x128) on jumper wires: [epaper_clock.py](epaper_clock.py), wiring diagram: [wiring.svg](wiring.svg)
 - Waveshare 7.5" e-paper driver HAT (Rev2.3, V2, 800x480) stacked on the Pi: [epaper_clock_7in5.py](epaper_clock_7in5.py) with its own driver [epd7in5_v2.py](epd7in5_v2.py), see [7.5" display](#75-display)
 - Repo: https://github.com/matze0054/rasby-project (private)
+- Turning the Pi and the dashboard on and off: [OPERATING.md](OPERATING.md)
 
 ## Hardware
 
@@ -92,7 +93,7 @@ python3 epaper_clock_7in5.py           # runs until Ctrl+C or `kill`, clears the
 python3 epaper_clock_7in5.py --clear   # only turn the panel white, e.g. after a power loss
 ```
 
-The panel is refreshed every minute at :00 with a flash-free partial refresh, and every 15 minutes with a full (flashing) refresh to clear ghosting. Settings (location, station, pins, refresh behaviour, `ROTATE = 180` for an upside-down mount) are constants at the top of the script.
+The panel is refreshed every minute at :00 with a flash-free partial refresh, and every 15 minutes with a full (flashing) refresh to clear ghosting. Settings (location, station, pins, refresh behaviour, `ROTATE`: 180 = upside down, 0 = normal) are constants at the top of the script.
 
 ### Troubleshooting
 
