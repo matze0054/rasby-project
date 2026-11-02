@@ -60,7 +60,7 @@ Count header columns from the SD-card end (column 1 = pins 1 and 2). Odd pins ar
 
 ## 7.5" display
 
-Waveshare 7.5inch e-Paper HAT, **V2** (800x480, black/white, SPI, 3.3 V/5 V tolerant), driver HAT Rev2.3. Layout: large clock and date, current temperature and conditions with a bar chart of the rain probability for the next 12 hours (`RAIN_HOURS`), and the Pokémon of the day (left); the next 8 U-Bahn departures (right), with a banner above them when FC Bayern plays at home that day (kick-off time, or LIVE and the score during the match), and the next public holiday at the bottom right. Preview without hardware: `python mock_display.py --panel 7in5` (add `--live` for real data, `--bayern-home` to see the banner).
+Waveshare 7.5inch e-Paper HAT, **V2** (800x480, black/white, SPI, 3.3 V/5 V tolerant), driver HAT Rev2.3. Layout: large clock and date, current temperature and conditions with a chart for the next 12 hours (`RAIN_HOURS`) with the rain probability as bars (left axis) and the hourly temperature as a dotted line (right axis), and the Pokémon of the day (left); the next 8 U-Bahn departures (right), with a banner above them when FC Bayern plays at home that day (kick-off time, or LIVE and the score during the match), and the next public holiday at the bottom right. Preview without hardware: `python mock_display.py --panel 7in5` (add `--live` for real data, `--bayern-home` to see the banner).
 
 ### Hardware setup
 

@@ -8,6 +8,7 @@ The panel is cleared to white on exit; `--clear` does only that.
 """
 import argparse
 import json
+import math
 import signal
 import time
 import urllib.parse
@@ -79,12 +80,12 @@ def ellipsize(text, fnt, max_width):
 
 
 def fetch_weather():
-    """Return the current weather and the hourly rain probability, or None if the request fails."""
+    """Return the current weather and hourly rain probability and temperature, or None on failure."""
     url = (
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={LATITUDE}&longitude={LONGITUDE}"
         "&current=temperature_2m,weather_code"
-        "&hourly=precipitation_probability"
+        "&hourly=precipitation_probability,temperature_2m"
         "&timezone=auto&forecast_days=2"
     )
     try:
@@ -92,9 +93,11 @@ def fetch_weather():
             data = json.load(resp)
         cur, hourly = data["current"], data["hourly"]
         hours = [
-            (datetime.fromisoformat(t), p)
-            for t, p in zip(hourly["time"], hourly["precipitation_probability"])
-            if p is not None
+            (datetime.fromisoformat(t), rain, temp)
+            for t, rain, temp in zip(
+                hourly["time"], hourly["precipitation_probability"], hourly["temperature_2m"]
+            )
+            if rain is not None and temp is not None
         ]
         return {
             "temp": cur["temperature_2m"],
@@ -182,23 +185,35 @@ def draw_clock(draw, now):
 
 
 def draw_rain_chart(draw, hours, now):
-    """Bar chart of the rain probability for the next RAIN_HOURS hours."""
+    """Rain probability as bars (left axis) and temperature as a dotted line (right axis)."""
     start = now.replace(minute=0, second=0, microsecond=0)
-    bars = [(t, p) for t, p in hours if t >= start][:RAIN_HOURS]
+    bars = [h for h in hours if h[0] >= start][:RAIN_HOURS]
     if not bars:
         return
-    left, right, top, bottom = MARGIN + 44, SPLIT - 20, 236, 314
+    left, right, top, bottom = MARGIN + 44, SPLIT - 20 - 38, 236, 314
     height = bottom - top
     label = font(FONT_REG, 13)
+
+    # Temperature axis: whole degrees, an even span so the middle tick is a whole degree too.
+    temps = [temp for _, _, temp in bars]
+    t_lo, t_hi = math.floor(min(temps)) - 1, math.ceil(max(temps)) + 1
+    if (t_hi - t_lo) % 2:
+        t_hi += 1
+    if t_hi - t_lo < 4:
+        t_hi, t_lo = t_hi + 1, t_lo - 1
+
     for pct in (0, 50, 100):
         y = bottom - round(height * pct / 100)
         draw.text((left - 6, y), f"{pct}%", font=label, fill=0, anchor="rm")
+        draw.text((right + 6, y), deg(t_lo + (t_hi - t_lo) * pct / 100), font=label, fill=0, anchor="lm")
         if pct:
             for x in range(left, right, 8):  # dashed guide line
                 draw.line((x, y, x + 3, y), fill=0)
     draw.line((left, bottom, right, bottom), fill=0, width=2)
+
     slot = (right - left) / RAIN_HOURS
-    for i, (t, pct) in enumerate(bars):
+    points = []
+    for i, (t, pct, temp) in enumerate(bars):
         x = left + i * slot
         bar_h = round(height * pct / 100)
         if pct and bar_h < 2:
@@ -207,6 +222,13 @@ def draw_rain_chart(draw, hours, now):
             draw.rectangle((x + 4, bottom - bar_h, x + slot - 4, bottom - 1), fill=0)
         if i % 3 == 0:
             draw.text((x + slot / 2, bottom + 18), f"{t:%H}:00", font=label, fill=0, anchor="ms")
+        points.append((x + slot / 2, bottom - height * (temp - t_lo) / (t_hi - t_lo)))
+
+    # White halo under the line and dots keeps them visible on top of the black bars.
+    draw.line(points, fill=255, width=6, joint="curve")
+    draw.line(points, fill=0, width=2, joint="curve")
+    for x, y in points:
+        draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=255, outline=0, width=2)
 
 
 def draw_weather(draw, weather, now):
@@ -220,11 +242,11 @@ def draw_weather(draw, weather, now):
     draw.text((MARGIN, base), f"{deg(weather['temp'])}", font=big, fill=0, anchor="ls")
     x = MARGIN + big.getlength(f"{deg(weather['temp'])}") + 14
     caption = font(FONT_REG, 14)
-    cap_w = caption.getlength("Rain chance")
+    cap_w = caption.getlength("Line: temp")
     label = fit_font(FONT_BOLD, weather["label"], 28, SPLIT - 20 - x - cap_w - 10)
     draw.text((x, base), weather["label"], font=label, fill=0, anchor="ls")
-    draw.text((SPLIT - 20, base - 18), "Rain chance", font=caption, fill=0, anchor="rs")
-    draw.text((SPLIT - 20, base), f"next {RAIN_HOURS} h", font=caption, fill=0, anchor="rs")
+    draw.text((SPLIT - 20, base - 18), "Bars: rain", font=caption, fill=0, anchor="rs")
+    draw.text((SPLIT - 20, base), "Line: temp", font=caption, fill=0, anchor="rs")
     draw_rain_chart(draw, weather["hours"], now)
 
 
